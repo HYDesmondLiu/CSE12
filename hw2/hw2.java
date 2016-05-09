@@ -1,0 +1,484 @@
+/**
+ * Name: Ji Woon Chung
+ * Class: CSE 12, Winter 15
+ * Date Janurary 10, 2015
+ * login: cse12xbo
+ *
+ * Assignment Two
+ * File name: hw2.java
+ * Description: This program reads strings and integers from the user,
+ *   processes them, and prints them back to the user. Program
+ *   terminates when user enters ^D.  At termination, program
+ *   outputs sizes of various types of C/C++ pre defined types.
+ *
+ * The hw2 class is a direct port of hw2.c to java.
+ * As you already know in java when you pass literal strings like
+ * <P>
+ *   writeline("a literal string\n", stream);
+ * <P>
+ * in C is considered a char[], but in java it's automatically
+ * converted and treated as a String object.  Therefore 
+ * the function writeline accepts literal strings and 
+ * String types.  The getaline function returns a String type.
+ */
+
+import java.io.*;        // System.in and System.out
+import java.util.*;      // Stack
+
+class MyLibCharacter {
+	private Character character;
+	public MyLibCharacter (int ch) {
+		character = new Character ( (char) ch );
+	}
+	public char charValue () {
+		return character.charValue ();
+	}
+	public String toString () {
+		return "" + character;
+	}
+}
+
+
+public class hw2 {
+	private static final int ASCII_ZERO = 48;
+	private static final int COUNT = 8;		// # of hex digits
+
+	private static final int CR = 13;		// Carriage Return
+	private static final int MAXLENGTH = 80;	// Max string length
+
+	private static final int EOF = -1;		// process End Of File
+
+	private static final int DECIMAL = 10;		// to indicate base 10
+	private static final int HEX = 16;		// to indicate base 16
+	private static final int SEVEN = 7; //to create an array with 7 spaces
+	private static final char digits[] = 	// for ASCII conversion
+	     new String("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ").toCharArray();
+
+	private static final String DEBUG_GETALINE = 
+		"[*DEBUG:  The length of the string just entered is ";
+
+	private static final String DIGIT_STRING = "digit ";
+	private static final String REENTER_NUMBER ="\nPlease reenter number: ";
+	private static final String OUT_OF_RANGE = " out of range!!!\n";
+	private static final String CAUSED_OVERFLOW = " caused overflow!!!\n";
+	private static final String DEBUG_WRITELINE =
+		"\n[*DEBUG:  The length of the string displayed is ";
+
+	private static Stack<MyLibCharacter> InStream =
+		new Stack<MyLibCharacter>();
+
+	private static boolean debug_on = false;
+	private static int hexCounter = 0; // counter for the number hex digits
+
+	/**
+	* Function Name: baseout
+	* Purpose:      Takes in a positive number and displays in a given base.
+	* Description:    Continually modes the number with the base, that's 
+	*	passed through, so that a single digit will be created, which 
+	*	then will be stored into the character array and the number 
+	*	is also continually divided by the base creating a new number 
+	*	until the do while condition is met. Then the single digit 
+	*	stored in the character array is printed out. Since, each 
+	*	character is stored into the character array backwards, I 
+	*	decremented the array so that the characters will print out the
+	*	correct	way. 
+	* Parameters: 
+	*   int number:         Numeric value to be displayed.
+	*   int base:           Base to used to display number.
+	*   PrintStream stream: Where to display, likely System.out or 
+	*		System.err.
+	* Return: Nothing
+	*/
+	private static void baseout (int number, int base, PrintStream stream) {
+		int index = 0; //initialized index to zero.
+		int remainder = 0; //initialized remainder to zero.
+		char[] array = new char[COUNT]; //initializing the character
+		//array to have eight spaces.
+		//If the base is a HEX, the array will start off by having
+		//zeros.
+		if (number < 0) {
+			number = number * -1;
+		}
+		if(base == HEX) { 
+			array[SEVEN] = array[hexCounter];
+		}
+		//Since this is a do while loop, this method will run at 
+		//least once. 
+		do {
+			remainder = number % base; //Remainder = the single 
+			//digit, created by moding number with the base.
+			array[index] = digits[remainder]; //Storing that single 
+			//digit character into the character array replacing 
+			//the zeros if base equals hex.
+		        number = number / base; //A new number will be created 
+			//by dividing the old number by the base. 
+			index++; //Increase the index storing the single digit 
+			//character into a new number.
+		} while (number > 0); //A while loop that runs the function 
+		//continually if the number is bigger than zero.
+		while (index > 0) { //A while loop that runs the function until 
+		//the index is zero. 
+			index--; //decrement the index so that characters can
+			//be printed out in a correct order. 
+			fputc(array[index], stream); //Prints out the single 
+			//digit characters
+		}
+	}
+
+	/**
+	* Function Name: clrbuf
+	* Purpose: When called, this function will clear stdin.
+	* Description: This function checks to see if the incoming 
+        *   parameter is already '\n' indicating that stdin 
+        *   is already clear.  If stdin is already clear, this 
+        *   function does nothing.  Otherwise, this function 
+        *   calls "fgetc" in a loop until stdin is clear. 
+	* Parameters: 
+	*   character: the most recent character received from previous
+	*     call to fgetc
+	* Result: stdin cleared. Nothing is returned.
+	*/
+	public static void clrbuf (int character) {
+		//until the character hits the enter character, the
+		//program will store the extra characters but will
+		//not print them out. 
+		while (character != '\n') {
+			character = fgetc(System.in); //gets in the remaining
+			//characters of the word that the user has inputted but
+			//does not display it.
+		} 
+	}
+
+
+	/**
+	* Function Name: decin
+	* Purpose: This function accepts integer input from the user.
+	* Description: This function processes user input in a loop that ends
+        *  when the user enters either a valid number or EOF. If EOF is 
+	*  entered, EOF is returned. Otherwise each character entered is 
+	*  checked to verify that it is numeric. Non-numeric input is 
+	*  identified, the user is notified, reprompted, and the loop 
+	*  begins again. Once the input is verified to be valid, a series
+        *  of multiplication by 10 and addition can take place to convert 
+	*  the ASCII characters entered into a numeric quantity.	
+	* Parameters: 
+	*   Nothing
+	* Return: The number entered or EOF.
+	*/
+	public static int decin() {
+		int sum = 0;
+		int digit = 0;
+		int index = 0;
+		int old = 0;
+		int TEN = 10;
+		int character = fgetc(System.in);
+		while (character != '\n') {
+			if ( character == EOF) {
+				return EOF;
+			}
+			if (character < '0' || character > '9') {
+				digiterror(character, OUT_OF_RANGE);
+				sum = decin(); 
+				break;
+			}
+			old = sum;
+			digit = character - '0';
+			index++;
+			sum = sum * TEN + digit;
+			if ((sum - digit)/TEN != old) {
+				digiterror(character, CAUSED_OVERFLOW);
+				sum = decin();
+				break;
+			}
+			else 
+				old = sum;
+				character = fgetc(System.in);
+		}
+		return sum; 
+	}
+
+
+	/**
+	* Function Name: decout
+	* Purpose: Takes in a positive number and displays it in decimal.
+	* Description: Calls the baseout function with new parameters being 
+	*	passed to it. 
+	* Parameters: 
+	*   int number: positive numeric value to be displayed.
+	*   PrintStream stream: Where to display, likely System.out or 
+	*		System.err.
+	* Return: Nothing is returned. 
+	*/
+	public static void decout (int number, PrintStream stream) { 
+		baseout(number, DECIMAL, stream); //Calls the baseout function 
+		//placing a number and a base of decimal.
+	}
+
+
+	/*----------------------------------------------------------------------
+	Function Name:          digiterror
+	Purpose:                This function handles erroneous user input.
+	Description:            This function  displays and error message to the
+				user, and asks for fresh input.
+	Input:                  character: The character that began the problem.
+				message: The message to display to the user.
+	Result:                 The message is displayed to the user.
+				The result in progress needs to be set to 0 in
+				decin after the call to digiterror.
+	----------------------------------------------------------------------*/
+	public static void digiterror (int character, String message) {
+		/* handle error */
+		clrbuf (character);
+		/* output error message */
+		writeline (DIGIT_STRING, System.err);
+		fputc ( (char)character, System.err);
+		writeline (message, System.err);
+		writeline (REENTER_NUMBER, System.err);
+	}
+
+	/**
+	* Function Name: getaline
+	* Purpose: This function will read a string from the user.
+	* Description:  This function gets input from the user via
+        *   calls to fgetc up to some maximum number of
+        *   characters.  Input is terminated when either the
+        *   maximum number of characters are entered, or
+        *   a newline character is detected.  If the user
+        *               enters more characters than the maximum, clrbuf
+        *               is called to remove extra characters which are
+        *               ignored.  Since this is routine accepts input,
+        *               if EOF is detected EOF is passed back to the main
+        *               program.
+	* Parameters: 
+	*   message: The destination array where input is stored.
+        *   maxlength: The maximum number of non-NULL characters
+        *         allowed in the string + 1 for the NULL char.
+	* Return: User input is stored in message.
+        *   EOF is returned when the user enters ^D.
+        *   Otherwise, the length of the message is returned.
+	*/
+	public static int getaline( char message[], int maxlength ) {
+		int index = 0; //initializing index to zero
+		int character = 0; //initializing integer character to zero
+		maxlength = MAXLENGTH; //initializg maxlength to the global
+		//maxlength
+		character = fgetc(System.in); //takes in the first character 
+		//that the user inputted in the system. 
+		//A do while loop that reads in each character that the user has
+		//typed and stores them into an array. However, when the runs
+		//into the enter character, the program stops
+		//storing in the characters into an array.  
+		do {
+			if (character == EOF) { //if the user presses control D
+				return EOF; //the function ends
+			}
+			message[index] = (char)character; //storing each 
+			//character into an array
+			character = fgetc(System.in); //character will become 
+			//the character that the user has inputted.
+			index++; 
+		} while (character != '\n' && index < maxlength-1); //a while 
+		//loop that keeps running until it hits the maximum length 
+		//character and the enter character.
+		message[index] = '\0'; //storing null character into the array.
+		clrbuf(character); //calls the clearbuff method so that the 
+		//extra characters are not outputted. 
+		if (debug_on == true) { //if the user types in -x at the 
+			//beginning
+			System.err.println(DEBUG_GETALINE + index + ']');
+			//will output the debug message with the length size
+		}
+		return index; //prints out the string's length
+	}
+
+	/**
+	* Function name: hexout
+	* Purpose: Takes in a positive number and displays it in hex.
+	* Description: Goal is achieved via delegating to the baseout function.
+	* Parameter:
+	*   int number: A positive numeric value to be displayed in hex.
+	*   PrintStream: Where to display, likely System.out or System.err.
+	* Return: Number in base 16 is displayed. No return value.  
+	*/
+	public static void hexout (int number, PrintStream stream) {
+		// Output "0x" for hexidecimal.
+		writeline ("0x", stream);
+		baseout (number, HEX, stream);
+	}
+
+	/**
+	* Function name: fgetc
+	* Purpose: Returns a character from the input stream.
+	* Description:
+	* Parameter:
+	*   InputStream stream:
+	* @return  <code>char</code> 
+	*/
+	public static int fgetc(InputStream stream) {
+		char ToRet = '\0';
+		// Check our local input stream first.
+		// If it's empty read from System.in
+		if (InStream.isEmpty ()) {
+			try {
+			// Java likes giving the user the
+			// CR character too. Dumb, so just 
+			// ignore it and read the next character
+			// which should be the '\n'.                  
+			ToRet = (char) stream.read ();
+			if (ToRet == CR) 
+				ToRet = (char) stream.read ();
+				// check for EOF
+				if ((int) ToRet == 0xFFFF)
+					return EOF;
+			}
+			//Catch any errors in IO.
+			catch (EOFException eof) {
+			// Throw EOF back to caller to handle
+				return EOF;
+			}
+			catch (IOException ioe) {
+				writeline ("Unexpected IO Exception caught!\n",
+				System.out);
+				writeline (ioe.toString (), System.out);
+			}
+		}
+		// Else just pop it from the InStream.
+		else
+			ToRet = ((MyLibCharacter) InStream.pop ()).charValue ();
+			return ToRet;
+	}
+
+	/**
+	* Function name: fputc
+	* Purpose: Displays a single character.
+	* Parameters: 
+	*   CharToDisp: Character to display.
+	*   stream: Where to display, likely system.out or system.err.
+	* Return: Nothing.
+	*/
+	public static void fputc(char CharToDisp, PrintStream stream) {
+		// Print a single character.
+		stream.print (CharToDisp);   
+		// Flush the system.out buffer, now. 
+		stream.flush ();
+	}
+
+	/**
+	* Function name: newline
+	* Purpose: Prints out a newline character.
+	* Description: A new line character is created. 
+	* Parameter:
+	*   PrintStream stream: Where to display, likely System.out or 
+	*		System.err.
+	* Return: Nothing is returned. 
+	*/
+	public static void newline ( PrintStream stream ) {
+	//prints out a new line
+		fputc('\n', stream);
+	}
+
+	/**
+	* Function Name: writeline
+	* Purpose: Prints out a string.
+	* Description: Each character of the message/string is stored into an 
+	*	array and increments until the function hits the NULL character.
+	* Parameters:	
+	*  String message:  A string to print out.
+	*  PrintStream stream: Where to display, likely System.out or 
+	*		System.err.
+	* Return: <code>int</code> The length of the string.
+	*/
+	public static int writeline (String message, PrintStream stream) {     
+	//A for loop that stores each character into an array until the index 
+	//is less than the message length.
+	//Index is initialized to zero and increments until the for loop 
+	//condition is met. 
+		int index = 0;
+		char[] array = new char[message.length()];
+		for( int i = 0; i < message.length(); i++) {
+			array[i] = new Character(message.charAt(i));
+		}
+		//reads up to the message length or up to the null
+		//character. 
+		while ( index < message.length() && message.charAt(index) 
+			!= '\0') {
+			fputc(message.charAt(index), stream);
+			index++; //goes to the next storage in the array.
+		}
+		//if the user types in -x then the debug message will appear. 
+		if (debug_on == true) {
+			System.err.println(DEBUG_WRITELINE + index + ']');
+		} 
+		return index; //prints out the length of the string.
+	}
+
+	/**
+	* File name: ungetc
+	* Purpose: Places back a character into the input stream buffer.
+	* Parameter: 
+	*   ToPutBack: A character to putback into the input buffer stream.
+	*/
+	public static void ungetc (int ToPutBack) {
+		// Push the char back on our local input stream buffer.
+		InStream.push (new MyLibCharacter (ToPutBack));
+	}
+
+	/**
+	* Function name: main
+	* Purpose: Places back a character into the input stream buffer.
+	* Description: This function asks for input and displays output
+        *               in an infinite loop until EOF is detected.  Once EOF
+        *               is detected, the lengths of the types are displayed.
+	* Parameters:
+	*   String[] args: A character to putback into the input buffer stream.
+	* Return: Void. 
+	*/
+	public static void main( String[] args ) {  
+  
+		char buffer[] = new char[MAXLENGTH];       /* to hold string */ 
+  
+		int number;                  /* to hold number entered */  
+		int strlen;                  /* length of string */
+		/* initialize debug states */
+		debug_on = false;
+		/* check command line options for debug display */
+		for (int index = 0; index < args.length; ++index) {
+			if (args[index].equals("-x"))
+				debug_on = true;
+		} 
+		/* infinite loop until user enters ^D */
+		while (true) {
+			writeline ("\nPlease enter a string:  ", System.out);
+			strlen = getaline (buffer, MAXLENGTH);
+			newline (System.out);
+			/* check for end of input */
+			if ( EOF == strlen )
+				break;
+			writeline ("The string is:  ", System.out);
+			writeline ( new String(buffer), System.out);
+
+			writeline ("\nIts length is ", System.out);
+			decout (strlen, System.out);
+			newline (System.out);
+
+			writeline ("\nPlease enter a decimal number:  ", 
+					System.out);
+			if ((number = decin ()) == EOF)
+				break;
+
+			writeline ("Number entered is:  ", System.out);
+			decout (number, System.out);
+
+			writeline ("\nAnd in hexidecimal is:  ", System.out);
+			hexout (number, System.out);
+
+			writeline ("\nNumber entered multiplied by 8 is:  ", 
+					System.out);
+			decout (number << 3, System.out);
+			writeline ("\nAnd in hexidecimal is:  ", System.out);
+			hexout (number << 3, System.out);
+
+			newline (System.out);
+		}
+	}
+}

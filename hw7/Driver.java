@@ -1,0 +1,205 @@
+/**
+ * Name: Ji Woon Chung
+ * Class: CSE 12, Winter 15
+ * Date: February 18, 2015
+ * login: cs12xbo
+ *
+ * Assignment Seven
+ * File Name: Driver.java
+ * Description: A file filled with methods needed to test, run, and
+ * check if Tree.java works properly. Has constructors
+ * that creates and stores multiple names and student's number for UCSDStudent
+ * every time the user inputs. 
+ */
+
+import java.io.*;
+
+class UCSDStudent extends Base {
+
+        private String name;
+        private long studentnum;
+
+        /**
+        * This method will store the name and the student number that the
+	* user has inputted. 
+	*
+        * @param   name		A string that the user has inputted into
+	*			the terminal. 
+        * @param   number	A long value that the user has inputted into
+	*			the terminal.
+        * @return		Nothing. 
+        */
+	public UCSDStudent (String name, long number) {
+		// the class name and number will take in the name and number
+		// that the user has inputted to the terminal
+		this.name = name;
+		studentnum = number;
+	}
+
+	/**
+        * This method will get/recieve the name which was stored in the 
+	* heap/Tree. 
+	*
+        * @return		Will return the name that was stored in the 
+	*			table index. 
+        */
+	public String getName() {
+		return name;
+	}
+	
+	/**
+        * This method will check to see if the name or the sum of ASCII of 
+	* the name that the user has inputted is a match or not to the 
+	* one already stored. 
+	*
+        * @param   other	A different object that is being compared to.
+        * @return		True if the two objects are similar or false
+	*			if the two objects are not. 
+        */
+	public boolean equals (Object object) {
+		// if the current element is a match to the one that is
+		// stored in the tree then it returns true.
+		if (this == object)
+			return true;
+		if (!(object instanceof UCSDStudent))
+		// if the current element is not similar/same to the object
+		// that is stored in the tree then it returns false.
+			return false;
+		UCSDStudent otherUCSDStu = (UCSDStudent) object;
+		return name.equals (otherUCSDStu.getName ());
+	}
+
+        /**
+        * A method/operator constructor to see which two element has the 
+	* greater value between the two. 
+	*
+        * @param	base: A variable that can take random object.
+        * @return	True if the element being passed in has a 
+	*		greater value than the one stored, being compared to.
+	*		False if it is not. 
+        */
+	public boolean isGreaterThan (Base base) {
+		// returns true if the user's input has a greater value than 
+		// what is currently being compared to. False if it is not. 
+		return (name.compareTo (base.getName ()) > 0) ? true : false;
+	}
+
+        public String toString () {
+                return "name:  " + name + "  studentnum:  " + studentnum;
+        }
+}
+
+public class Driver {
+        private static final short NULL = 0;
+
+        public static void main (String [] args) {
+        
+                /* initialize debug states */
+                Tree.debugOff();
+
+                /* check command line options */
+                for (int index = 0; index < args.length; ++index) {
+                        if (args[index].equals("-x"))
+                                Tree.debugOn();
+                }
+
+
+                /* The real start of the code */
+                SymTab<UCSDStudent> symtab = 
+                                new SymTab<UCSDStudent>("UCSDStudentTree");
+                String buffer = null;
+                char command;
+                long number = 0;
+
+                System.out.println ("Initial Symbol Table:\n" + symtab);
+
+                while (true) {
+                        command = NULL; // reset command each time in loop
+                        System.out.print ("Please enter a command:  " + 
+                                "((a)llocate, (i)nsert, (l)ookup, " +
+                                "(r)emove, (w)rite):  ");
+
+                        try {
+                        command = MyLib.getchar ();
+                        MyLib.clrbuf (command); // get rid of return
+
+                        switch (command) {
+                        case 'a':
+                                System.out.print
+                                ("Please enter name of new Tree to " +
+                                 "allocate:  ");
+                                
+                                buffer = MyLib.getline ();// formatted input
+                                symtab = new SymTab<UCSDStudent>(buffer);
+                                break;
+
+                        case 'i':
+                                System.out.print
+                                ("Please enter UCSD student name to insert:  ");
+
+                                buffer = MyLib.getline ();// formatted input
+
+                                System.out.print
+                                        ("Please enter UCSD student number:  ");
+
+                                number = MyLib.decin ();
+                                MyLib.clrbuf (command); // get rid of return
+
+                                // create student and place in symbol table
+                                symtab.insert(new UCSDStudent (buffer, number));
+                                break;
+
+                        case 'l': { 
+                                UCSDStudent found;      // whether found or not
+
+                                System.out.print
+                                ("Please enter UCSD student name to lookup:  ");
+                                buffer = MyLib.getline ();// formatted input
+
+                                UCSDStudent stu = new UCSDStudent (buffer, 0);
+                                found = symtab.lookup (stu);
+                                
+                                if (found != null) {
+                                        System.out.println("Student found!");
+                                        System.out.println(found);
+                                }
+                                else
+                                        System.out.println ("student " + buffer
+                                                + " not there!");
+                                }
+                                break;
+                        
+                        case 'r': { 
+                                UCSDStudent removed; // data to be removed
+
+                                System.out.print
+                                ("Please enter UCSD student name to remove:  ");
+
+                                buffer = MyLib.getline ();
+
+                                UCSDStudent stu = new UCSDStudent (buffer, 0);
+
+                                removed = symtab.remove(stu);
+
+                                if (removed != null) {
+                                        System.out.println("Student removed!"); 
+                                        System.out.println(removed);
+                                }
+                                else
+                                        System.out.println ("student " + buffer
+                                                + " not there!");
+                                }
+                                break;
+
+                        case 'w':
+                                System.out.println("The Symbol Table " +
+                                "contains:\n" + symtab);
+                        }
+                        }
+                        catch (EOFException eof) {
+                                break;
+                        }
+                }
+                System.out.println("\nFinal Symbol Table:\n" + symtab);
+        }
+}
